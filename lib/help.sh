@@ -79,7 +79,7 @@ _Help::Autohelp() {
     required+="${input} "
   done
   local options=""
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
     options+="[${input}] "
   done
   printf "\r\033[2K  [\033[0;31mError\033[0m] Expected input: Core ${function_name} ${required}${options}\n"
@@ -100,7 +100,7 @@ _Help::Input_count(){
     required=$((required+1))
   done
   local all=1
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
     all=$((all+1))
   done
   echo "$required:$all:$override"
