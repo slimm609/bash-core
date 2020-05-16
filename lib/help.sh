@@ -25,6 +25,23 @@ _Help::Fzf() {
         found="true"
       fi
     done
+    # if not found, split and search on the first letter of each part
+    if [[ ${found} == "false" ]]; then
+      IFS=':' read -r -a func <<< "${function_name}"
+      for f in $(declare -F); do
+        if [[ ${#func[@]} -eq 2 ]]; then
+          if [[ ${f:11} == "${func[0]:0:1}"*:"${func[1]:0:1}"* ]]; then
+            echo "${f:11}"
+            found="true"
+          fi
+        elif [[ ${#func[@]} -eq 3 ]]; then
+          if [[ ${f:11} == "${func[0]:0:1}"*:"${func[1]:0:1}"*:"${func[2]:0:1}"* ]]; then
+            echo "${f:11}"
+            found="true"
+          fi
+        fi
+      done
+    fi
     if [[ ${found} == "false" ]]; then
       echo "Error: ${function_name} not found"
       exit 255
@@ -64,7 +81,7 @@ _Help::Help() {
   echo
   unset options
   options=""
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     options+="${input} "
   done
   echo "Expected input: Core $function_name $options"
@@ -75,11 +92,11 @@ _Help::Autohelp() {
   local -r function_name=${1}
   unset options
   local required=""
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -v '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -Ev '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     required+="${input} "
   done
   local options=""
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     options+="[${input}] "
   done
   printf "\r\033[2K  [\033[0;31mError\033[0m] Expected input: Core ${function_name} ${required}${options}\n"
@@ -88,7 +105,7 @@ _Help::Autohelp() {
 _Help::Input_count(){
   local -r function_name=${1}
   local override=0
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${@.*}|=\$@|="\${@.*}"|="\$@"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${@.*}|=\$@|="\${@.*}"|="\$@"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     override=$((override+1))
   done
   if [[ ${override} -gt 0 ]]; then
@@ -96,11 +113,11 @@ _Help::Input_count(){
   fi
   #start at one because we want to account for the function itself
   local required=1
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -v '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -Ev '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     required=$((required+1))
   done
   local all=1
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk '{ print $2 }' | awk -F= '{ print $1 }'); do
+  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     all=$((all+1))
   done
   echo "$required:$all:$override"
