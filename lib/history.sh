@@ -3,6 +3,12 @@
 # Add fzf weighted history
 #
 
+history() {
+  echo "Count      Command"
+  echo "-----      -------"
+  _History::List
+}
+
 _History::List() {
     local input=${@}
     [[ -d "${REPO}/.history" ]] && {

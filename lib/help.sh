@@ -57,8 +57,8 @@ _Help::Help() {
   local found="false"
   if [[ "${function_name}" =~ "--help" ]]; then
     echo "###Help###"
-    echo "To list all functions run `core help`"
-    echo "To see help for a function run `core \$function --help`"
+    echo "To list all functions run \`core help\`"
+    echo "To see help for a function run \`core \$function --help\`"
     exit 0
   fi
   if [[ ! -n "$(LC_ALL=C type -t ${function_name})" ]] || [[ "$(LC_ALL=C type -t ${function_name})" != function ]]; then

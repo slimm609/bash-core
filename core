@@ -1,22 +1,49 @@
 #!/usr/bin/env bash
-[[ -L "${BASH_SOURCE[0]}" ]] && REPO="$(cd "$(dirname $(readlink "${BASH_SOURCE[0]}"))/" && pwd -P)" || REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/" && pwd -P)"
+#set -o errtrace
+set -o pipefail
+# make sure their base version is correct
+[[ "${BASH_VERSINFO[0]}" -ge 4 ]] || { echo "Bash version must be 4 or greater"; exit 1; }
+
+# find the location of core, regardless of where on the system it is.
+[[ -L "${BASH_SOURCE[0]}" ]] && _core_repo="$(cd "$(dirname $(readlink "${BASH_SOURCE[0]}"))/" && pwd -P)" || _core_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/" && pwd -P)"
+
+# help with debugging
+export PS4='+(${BASH_SOURCE##*/}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# make sure an option was passed, don't spend time doing anything else unless there are options
+[[ $# -eq 0 ]] && { echo "Error: no options passed"; exit 1; }
+
+# Are we currently in a git repo?
+if git rev-parse --show-toplevel &> /dev/null; then
+  _curr_repo=$(git rev-parse --show-toplevel)
+fi
 
 # Keep track of the calling directory
 PWD=$(pwd)
 
-
-
-# Always work from the root of singularity
-cd ${REPO}
-source "${REPO}/lib/main.sh"
-_self="$0"
-
-if [[ $# -eq 0 ]]; then
-  echo "Error: no options passed"
-  exit 1
+# if we are in the core repo, make everything function from here
+if [[ -z ${_curr_repo} ]] || [[ ${_curr_repo} == ${_core_repo} ]]; then
+  REPO="${_core_repo}"
+else
+  # Allow core to function on other repos, as long as core is enabled on that repo
+  if [[ -f "${_curr_repo}/.core_enabled" ]]; then
+    REPO="${_curr_repo}"
+  else
+    REPO="${_core_repo}"
+  fi
 fi
 
+# Always import from the core repo, even when functioning from another repo
+source "${_core_repo}/lib/main.sh"
+_self="$0"
 
+# Keep track of the calling directory
+PWD=$(pwd)
+
+# work from the top of the reference repo
+cd ${REPO}
+
+# do we need to provide help?
 if [[ "$@" =~ "--help" ]]; then
   _Help::Help "${@}"
   exit
@@ -26,6 +53,7 @@ elif [[ "$@" =~ "--fzf" ]]; then
   exit
 fi
 
+# check the input
 if [[ $(type -t "${1}") == "function" ]]; then
   func=$(_Help::Input_count "${1}")
   OLDIFS=$IFS; IFS=':' read -a count <<< "${func}"; IFS=${OLDIFS}
