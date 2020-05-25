@@ -13,12 +13,13 @@ _core_help() {
 
 _completion() {
   local shell=${1:-bash}
+  local is_zsh=""
   if [[ "$shell" == "zsh" ]]; then
-    echo "autoload bashcompinit"
-    echo "bashcompinit"
+    is_zsh="autoload bashcompinit; bashcompinit;"
   fi 
 
 cat <<EOF
+$is_zsh
 _core_completions() {
   comp_list="$(_core_help)"
   if [ \${#COMP_WORDS[@]} -ge 2 ] && [ "\${COMP_WORDS[1]}" =~ \$(echo ^\(\$(echo \$comp_list | sed 's/ /|/g')\$\)) ]; then

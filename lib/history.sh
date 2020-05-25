@@ -11,11 +11,11 @@ history() {
 
 _History::List() {
     local input=${@}
-    [[ -d "${REPO}/.history" ]] && {
-        echo "ERROR: history datafile (${REPO}/.history) is a directory." 
+    [[ -d "${REPO}/.core_history" ]] && {
+        echo "ERROR: history datafile (${REPO}/.core_history) is a directory." 
     }
  
-    local datafile="${REPO}/.history"
+    local datafile="${REPO}/.core_history"
     local -r OWNER="$(id -un)"
 
     # if symlink, dereference
@@ -92,11 +92,11 @@ _History::List() {
 
 _History::Add(){
     local input=${@}
-    [[ -d "${REPO}/.history" ]] && {
-        echo "ERROR: history datafile (${REPO}/.history) is a directory." 
+    [[ -d "${REPO}/.core_history" ]] && {
+        echo "ERROR: history datafile (${REPO}/.core_history) is a directory." 
     }
  
-    local datafile="${REPO}/.history"
+    local datafile="${REPO}/.core_history"
     local -r OWNER="$(id -un)"
 
     # if symlink, dereference
