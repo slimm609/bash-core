@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 _core_help() {
    IFS=$'\n' # make newlines the only separator
@@ -8,13 +8,13 @@ _core_help() {
            string+=" ${f:11}" # build string of options
         fi
    done
-   echo $string | sed -e 's/^[[:space:]]*//' # trim spaces
+   echo "${string//^[[:space:]]*/}" # trim spaces
 }
 
 _completion() {
   local shell=${1:-bash}
   local is_zsh=""
-  if [[ "$shell" == "zsh" ]]; then
+  if [[ "${shell}" == "zsh" ]]; then
     is_zsh="autoload bashcompinit; bashcompinit;"
   fi 
 

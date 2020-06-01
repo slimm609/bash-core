@@ -6,11 +6,11 @@
 history() {
   echo "Count      Command"
   echo "-----      -------"
-  _History::List
+  _History::List ""
 }
 
 _History::List() {
-    local input=${@}
+    local input=${*}
     [[ -d "${REPO}/.core_history" ]] && {
         echo "ERROR: history datafile (${REPO}/.core_history) is a directory." 
     }
@@ -19,11 +19,11 @@ _History::List() {
     local -r OWNER="$(id -un)"
 
     # if symlink, dereference
-    [[ -h "$datafile" ]] && datafile=$(readlink "$datafile") || touch $datafile
+    { [[ -h "${datafile}" ]] && datafile=$(readlink "${datafile}"); } || touch "${datafile}"
 
     _History::Line () {
         local line
-        while read line; do
+        while read -r line; do
              echo "$line"
         done < "$datafile"
         return 0
@@ -33,7 +33,7 @@ _History::List() {
         [[ -f "$datafile" ]] || return
 
         local match
-        match="$( < <( _History::Line ) awk -v t="$(date +%s)" -v list="1" -v typ="rank" -v q="$input" -F"|" '
+        match="$( < <( _History::Line ) awk -v t="$(date +%s)" -v list="1" -v typ="rank" -v q="${input}" -F"|" '
                 function frecent(rank, time) {
                 dx = t - time
                 return int(10000 * rank * (3.75/((0.0001 * dx + 1) + 0.25)))
@@ -91,7 +91,11 @@ _History::List() {
 }
 
 _History::Add(){
-    local input=${@}
+    if [[ "${core_history:-short}" == "full" ]]; then
+      local input=${*}
+    else
+      local input=${1}
+    fi
     [[ -d "${REPO}/.core_history" ]] && {
         echo "ERROR: history datafile (${REPO}/.core_history) is a directory." 
     }
@@ -100,23 +104,23 @@ _History::Add(){
     local -r OWNER="$(id -un)"
 
     # if symlink, dereference
-    [[ -h "$datafile" ]] && datafile=$(readlink "$datafile") || touch $datafile
+    { [[ -h "${datafile}" ]] && datafile=$(readlink "${datafile}"); } || touch "${datafile}"
     
     # if the function begins with `_` do not add to history,  its an internal function
     [[ ${input} =~ ^_.* ]] && return 0
 
     _History::Line () {
         local line
-        while read line; do
-             echo "$line"
-        done < "$datafile"
+        while read -r line; do
+             echo "${line}"
+        done < "${datafile}"
         return 0
     }
     
         # maintain the data file
-        local tempfile="$datafile.$RANDOM"
+        local tempfile="${datafile}.${RANDOM}"
         local score=${_MAX_SCORE:-1000}
-        _History::Line | awk -v path="$*" -v now="$(date +%s)" -v score=$score -F"|" '
+        _History::Line | awk -v path="${input}" -v now="$(date +%s)" -v score="${score}" -F"|" '
             BEGIN {
                 rank[path] = 1
                 time[path] = now
@@ -138,10 +142,11 @@ _History::Add(){
             }
         ' 2>/dev/null >| "$tempfile"
         # do our best to avoid clobbering the datafile in a race condition.
-        if [ $? -ne 0 -a -f "$datafile" ]; then
+        # shellcheck disable=SC2181
+        if [[ $? -ne 0 ]] && [[ -f "$datafile" ]]; then
             env rm -f "$tempfile"
         else
-            [ "$OWNER" ] && chown $OWNER:"$(id -ng $OWNER)" "$tempfile"
+            [[ "$OWNER" ]] && chown "${OWNER}":"$(id -ng "${OWNER}")" "$tempfile"
             env mv -f "$tempfile" "$datafile" || env rm -f "$tempfile"
         fi
 }

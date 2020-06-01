@@ -1,19 +1,21 @@
+#!/usr/bin/env bash
+
 _Help::Fzf() {
   local -r function_name=${1}
   local found="false"
-  if [[ ! -n "$(LC_ALL=C type -t ${function_name})" ]] || [[ "$(LC_ALL=C type -t ${function_name})" != function ]]; then
+  if [[ -z "$(LC_ALL=C type -t "${function_name}")" ]] || [[ "$(LC_ALL=C type -t "${function_name}")" != function ]]; then
     if [[ "${core_history:-short}" == "full" ]]; then
-      history=$(_History::List ${function_name})
+      history=$(_History::List "${function_name}")
       if [[ ${#history} -gt 0 ]]; then
-          _History::List ${function_name} | awk '{ print substr($0, index($0,$2)) }'
+          _History::List "${function_name}" | awk '{ print substr($0, index($0,$2)) }'
           found="true"
       fi
       # clear history for full searches
       history=""
     else
-      history=$(_History::List ${function_name})
+      history=$(_History::List "${function_name}")
       if [[ ${#history} -gt 0 ]]; then
-          _History::List ${function_name} | awk '{ print $2 }' | uniq
+          _History::List "${function_name}" | awk '{ print $2 }' | uniq
           found="true"
       fi
     fi
@@ -61,7 +63,7 @@ _Help::Help() {
     echo "To see help for a function run \`core \$function --help\`"
     exit 0
   fi
-  if [[ ! -n "$(LC_ALL=C type -t ${function_name})" ]] || [[ "$(LC_ALL=C type -t ${function_name})" != function ]]; then
+  if [[ -z "$(LC_ALL=C type -t "${function_name}")" ]] || [[ "$(LC_ALL=C type -t "${function_name}")" != function ]]; then
     IFS=$'\n' # make newlines the only separator
     set -f    # disable globbing
     for f in $(declare -F); do
@@ -81,7 +83,8 @@ _Help::Help() {
   echo
   unset options
   options=""
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
+  # shellcheck disable=SC2016
+  for input in $(declare -f "${function_name}" | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     options+="${input} "
   done
   echo "Expected input: Core $function_name $options"
@@ -92,20 +95,23 @@ _Help::Autohelp() {
   local -r function_name=${1}
   unset options
   local required=""
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -Ev '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
+  # shellcheck disable=SC2016
+  for input in $(declare -f "${function_name}" | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -Ev '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     required+="${input} "
   done
   local options=""
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
+  # shellcheck disable=SC2016
+  for input in $(declare -f "${function_name}" | grep local | grep -E '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     options+="[${input}] "
   done
-  printf "\r\033[2K  [\033[0;31mError\033[0m] Expected input: Core ${function_name} ${required}${options}\n"
+  printf "\r\033[2K  [\033[0;31mError\033[0m] Expected input: Core %s %s%s\n" "${function_name}" "${required}" "${options}"
 }
 
 _Help::Input_count(){
   local -r function_name=${1}
   local override=0
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${@.*}|=\$@|="\${@.*}"|="\$@"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
+  # shellcheck disable=SC2016
+  for input in $(declare -f "${function_name}" | grep local | grep -E '=\${@.*}|=\$@|="\${@.*}"|="\$@"|=\${\*.*}|=\$\*|="\${\*.*}"|="\$\*"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     override=$((override+1))
   done
   if [[ ${override} -gt 0 ]]; then
@@ -113,11 +119,13 @@ _Help::Input_count(){
   fi
   #start at one because we want to account for the function itself
   local required=1
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -Ev '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
+  # shellcheck disable=SC2016
+  for input in $(declare -f "${function_name}" | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | grep -Ev '=\${[0-9]:.*}|="\${[0-9]:.*}"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     required=$((required+1))
   done
   local all=1
-  for input in $(declare -f ${function_name} | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
+  # shellcheck disable=SC2016
+  for input in $(declare -f "${function_name}" | grep local | grep -E '=\${[0-9].*}|=\$[0-9].*|="\${[0-9].*}"|="\{[0-9].*"' | awk -F= '{ print $1 }' | awk '{print $NF}'); do
     all=$((all+1))
   done
   echo "$required:$all:$override"

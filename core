@@ -10,7 +10,7 @@ export LANG=C
 [[ "${BASH_VERSINFO[0]}" -ge 4 ]] || { echo "Bash version must be 4 or greater"; exit 1; }
 
 # find the location of core, regardless of where on the system it is.
-[[ -L "${BASH_SOURCE[0]}" ]] && _core_repo="$(cd "$(dirname $(readlink "${BASH_SOURCE[0]}"))/" && pwd -P)" || _core_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/" && pwd -P)"
+[[ -L "${BASH_SOURCE[0]}" ]] && _core_repo="$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}")")/" && pwd -P)" || _core_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/" && pwd -P)"
 
 # help with debugging
 export PS4='+(${BASH_SOURCE##*/}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -22,9 +22,11 @@ export PS4='+(${BASH_SOURCE##*/}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 _self="$0"
 
 # Always import from the core repo, even when functioning from another repo
+# shellcheck disable=SC2034
 _repo_alias=${_core_repo##*/}
 _curr_repo=${_core_repo}
 REPO="${_core_repo}"
+# shellcheck disable=SC1090
 source "${_core_repo}/lib/main.sh"
 
 # Are we currently in a git repo, that is not core? 
@@ -32,6 +34,7 @@ if git rev-parse --show-toplevel &> /dev/null; then
   _curr_repo=$(git rev-parse --show-toplevel)
   if [[ "${_curr_repo}" != "${_core_repo}" ]] && [[ -f "${_curr_repo}/.core_enabled" ]]; then 
     REPO="${_curr_repo}"
+    # shellcheck disable=SC2034
     _repo_alias=${_curr_repo##*/}
     grep -qxF "${_curr_repo}" "${_core_repo}/.core_repos" 2>/dev/null || echo "${_curr_repo}" >> "${_core_repo}/.core_repos"
     import "${_curr_repo}/core/lib"
@@ -41,13 +44,13 @@ fi
 # Keep track of the calling directory
 PWD=$(pwd)
 # work from the top of the reference repo
-cd ${REPO}
+cd "${REPO}"
 
 # do we need to provide help?
-if [[ "$@" =~ "--help" ]]; then
+if [[ "$*" =~ "--help" ]]; then
   _Help::Help "${@}"
   exit
-elif [[ "$@" =~ "--fzf" ]]; then
+elif [[ "$*" =~ "--fzf" ]]; then
   # Generate fzf history list
   _Help::Fzf "${@}"
   exit
@@ -56,7 +59,7 @@ fi
 # check the input
 if [[ $(type -t "${1}") == "function" ]]; then
   func=$(_Help::Input_count "${1}")
-  OLDIFS=$IFS; IFS=':' read -a count <<< "${func}"; IFS=${OLDIFS}
+  OLDIFS=$IFS; IFS=':' read -r -a count <<< "${func}"; IFS=${OLDIFS}
   if [[ "${count[0]}" == "${#}" ]] || [[ "${count[1]}" == "${#}" ]] || [[ "${count[2]}" == "99" ]] && [[ "${#}" -ge "${count[0]}" ]]; then
     _History::Add "${@}"
     eval "${@}"
@@ -64,11 +67,17 @@ if [[ $(type -t "${1}") == "function" ]]; then
     _Help::Autohelp "${1}"
   fi
 else
-  if type fzf &>/dev/null; then
-    if [[ $(${_self} ${1} --fzf &>/dev/null; echo $?) == 0 ]]; then
-      option=$(${_self} ${1} --fzf | fzf --no-preview --no-sort -1)
+  if type fzf &>/dev/null || type fzy &>/dev/null || type gof &>/dev/null; then
+    if [[ $(${_self} "${1}" --fzf &>/dev/null; echo $?) == 0 ]]; then
+      if type fzf &>/dev/null; then
+        option=$(${_self} "${1}" --fzf | fzf --no-preview --no-sort -1)
+      elif type fzy &>/dev/null; then
+        option=$(${_self} "${1}" --fzf | fzy -l 100)
+      elif type gof &>/dev/null; then
+        option=$(${_self} "${1}" --fzf | gof)
+      fi
       func=$(_Help::Input_count "${option}")
-      OLDIFS=$IFS; IFS=':' read -a count <<< "${func}"; IFS=${OLDIFS}
+      OLDIFS=$IFS; IFS=':' read -r -a count <<< "${func}"; IFS=${OLDIFS}
       if [[ "${count[0]}" == "${#}" ]] || [[ "${count[1]}" == "${#}" ]] || [[ "${count[2]}" == "99" ]] && [[ "${#}" -ge "${count[0]}" ]]; then 
         _History::Add "${option}" "${@:2}"
         eval "${option}" "${@:2}"
