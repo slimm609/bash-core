@@ -26,3 +26,4 @@ Install::Path() {
 Install::Completion() {
  echo "add 'source <(core _completion)' to your bashrc/zshrc"
 }
+

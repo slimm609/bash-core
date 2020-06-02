@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#set -o errtrace
+set -o errtrace
 set -euo pipefail
 
 export LC_CTYPE=C
@@ -13,7 +13,11 @@ export LANG=C
 [[ -L "${BASH_SOURCE[0]}" ]] && _core_repo="$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}")")/" && pwd -P)" || _core_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/" && pwd -P)"
 
 # help with debugging
-export PS4='+(${BASH_SOURCE##*/}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+if "${CORE_DEBUG:-false}"; then
+  BASH_XTRACEFD="5"
+  export PS4='(${BASH_SOURCE##*/}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+  set -x
+fi
 
 # make sure an option was passed, don't spend time doing anything else unless there are options
 [[ $# -eq 0 ]] && { echo "Error: no options passed"; exit 1; }
@@ -40,7 +44,8 @@ if git rev-parse --show-toplevel &> /dev/null; then
     import "${_curr_repo}/core/lib"
   fi
 fi
-
+# shellcheck disable=SC2034
+OS=$(_os::check)
 # Keep track of the calling directory
 PWD=$(pwd)
 # work from the top of the reference repo
