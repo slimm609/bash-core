@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-enable::repo() {
+Enable::Repo() {
 # Are we currently in a git repo, that is not core? 
 if git rev-parse --show-toplevel &> /dev/null; then
   _enable_repo=$(git rev-parse --show-toplevel)

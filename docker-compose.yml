@@ -1,0 +1,9 @@
+  
+version: '2'
+
+services:
+  shellcheck:
+    volumes:
+      - .:/mnt
+    image: koalaman/shellcheck
+    command: "core"

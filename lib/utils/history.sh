@@ -3,7 +3,7 @@
 # Add fzf weighted history
 #
 
-history() {
+History() {
   echo "Count      Command"
   echo "-----      -------"
   _History::List ""
