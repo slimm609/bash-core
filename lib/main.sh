@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+_Main::ctrl_c() {
+  # Exit with the proper code when Ctrl+C is pressed
+  exit 130
+}
+
+trap _Main::ctrl_c INT
+
 _main(){ unused(){ :;} }
 shopt -s expand_aliases
 

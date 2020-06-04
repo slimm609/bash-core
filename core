@@ -20,7 +20,7 @@ if "${CORE_DEBUG:-false}"; then
 fi
 
 # make sure an option was passed, don't spend time doing anything else unless there are options
-[[ $# -eq 0 ]] && { echo "Error: no options passed"; exit 1; }
+[[ $# -eq 0 ]] && { echo "Error: no options passed"; exit 127; }
 
 # declare itself
 _self="$0"
@@ -33,6 +33,11 @@ REPO="${_core_repo}"
 # shellcheck disable=SC1090
 source "${_core_repo}/lib/main.sh"
 
+pushd "${_core_repo}" &>/dev/null
+# Setup core git-hooks for main repo
+git config core.hooksPath >/dev/null || git config core.hooksPath "${_core_repo}/git-hooks" >/dev/null
+popd &>/dev/null
+
 # Are we currently in a git repo, that is not core? 
 if git rev-parse --show-toplevel &> /dev/null; then
   _curr_repo=$(git rev-parse --show-toplevel)
@@ -44,21 +49,30 @@ if git rev-parse --show-toplevel &> /dev/null; then
     import "${_curr_repo}/core/lib"
   fi
 fi
+
+# Set the operating system variable for mac or linux
 # shellcheck disable=SC2034
 OS=$(_os::check)
+
 # Keep track of the calling directory
 PWD=$(pwd)
+
 # work from the top of the reference repo
 cd "${REPO}"
+
+# if we are in a repo other than core and git-hooks exist, then configure them
+if [[ "${_curr_repo}" != "${_core_repo}" ]] && [[ -d "${_curr_repo}/core/git-hooks" ]]; then
+  git config core.hooksPath >/dev/null || git config core.hooksPath "${_curr_repo}/core/git-hooks" >/dev/null
+fi
 
 # do we need to provide help?
 if [[ "$*" =~ "--help" ]]; then
   _Help::Help "${@}"
-  exit
+  exit 0
 elif [[ "$*" =~ "--fzf" ]]; then
   # Generate fzf history list
   _Help::Fzf "${@}"
-  exit
+  exit 0
 fi
 
 # check the input
@@ -90,9 +104,9 @@ else
         _Help::Autohelp "${option}"
       fi
     else
-      _Log::Die 1 "Unknown Command"
+      _Log::Die 127 "Unknown Command"
     fi
   else
-    _Log::Die 1 "Unknown Command"
+    _Log::Die 127 "Unknown Command"
   fi
 fi
