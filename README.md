@@ -12,12 +12,17 @@ Core is meant to be used inside a git repo and linked into your path.   Once in 
 
 bash completion 
 ```
-source <(core completion)
+source <(core _completion)
 ```
 
 zsh completion 
 ```
-source <(core completion zsh)
+source <(core _completion zsh)
+```
+
+fish completion
+```
+core _completion fish | source
 ```
 
 fzf is recommended to be installed,   if fzf is installed, it will allow selection of the closest match,  core history keeps track of previous commands and orders core history based on history priority. 

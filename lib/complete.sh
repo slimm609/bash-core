@@ -16,6 +16,11 @@ _completion() {
   local is_zsh=""
   if [[ "${shell}" == "zsh" ]]; then
     is_zsh="autoload bashcompinit; bashcompinit;"
+  elif [[ "${shell}" == "fish" ]]; then
+    for cmd in $(_core_help); do
+      echo complete -f -c core -n __fish_use_subcommand -a "${cmd}"
+    done
+    exit 0
   fi 
 
 cat <<EOF
